@@ -1,0 +1,112 @@
+<div class="chat-container">
+    <!-- Botón Toggle (Siempre visible) -->
+    <div class="toggle-btn-container">
+        <button class="toggle-btn" (click)="togglePanel()">
+            <mat-icon>menu</mat-icon> <!-- Icono de toggle -->
+        </button>
+    </div>
+    <!-- Panel de Conversaciones -->
+    <div class="conversations-panel" [class.hidden]="isMinimized">
+        <div class="conv_encabe">
+            <button class="new-conversation-btn" (click)="addConversation()">
+                <mat-icon>maps_ugc</mat-icon> <!-- Icono de nueva conversación -->
+            </button>
+        </div>
+        <!-- Navegación de Conversaciones -->
+        <div class="conversation-nav">
+            <button (click)="filterConversations('active')" [class.active]="filter === 'active'">Activos</button>
+            <button (click)="filterConversations('inactive')" [class.active]="filter === 'inactive'">Inactivos</button>
+        </div>
+        <div class="historial">
+            <!-- Lista de conversaciones filtradas -->
+            <ul class="conversation-list">
+                <!-- Itera sobre las conversaciones filtradas y crea un elemento de lista para cada una -->
+                <li *ngFor="let conversation of filteredConversations" class="conversation-item">
+                    <div class="conversation-content" (click)="selectConversation(conversation)">
+                        <!-- Muestra el tema de la conversación si no está en modo de edición -->
+                        <span class="conversation-topic"
+                            *ngIf="!isEditing || (isEditing && selectedConversation.conversationId !== conversation.conversationId)">
+                            {{ conversation.topic }}
+                        </span>
+                        <!-- Input para editar el nombre de la conversación si está en modo de edición -->
+                        <input *ngIf="isEditing && selectedConversation.conversationId === conversation.conversationId"
+                            [(ngModel)]="editedConversationName" (keyup.enter)="saveUpdatedConversation()"
+                            (blur)="cancelEdit()" class="edit-input" /> <!-- Input para editar el nombre -->
+                    </div>
+                    <div class="more_vert">
+                        <!-- Botón para abrir el menú de opciones -->
+                        <button class="options-btn" mat-icon-button [matMenuTriggerFor]="menu"
+                            (click)="stopPropagation($event)">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #menu="matMenu">
+                            <!-- Opción para editar el nombre de la conversación -->
+                            <button mat-menu-item *ngIf="conversation.active && filter !== 'inactive'"
+                                (click)="updateConversation(conversation)">
+                                <mat-icon>edit</mat-icon> Cambiar el nombre
+                            </button>
+                            <!-- Opción para archivar la conversación -->
+                            <button mat-menu-item *ngIf="conversation.active && filter !== 'inactive'"
+                                (click)="archive(conversation)" style="color: red;">
+                                <mat-icon style="color: red;">delete</mat-icon> Eliminar
+                            </button>
+                            <!-- Opción para desarchivar la conversación si está inactiva -->
+                            <button mat-menu-item *ngIf="conversation.active !== 'A' && filter === 'inactive'"
+                                (click)="desarchive(conversation)" style="color: green;">
+                                <mat-icon style="color: green;">restore</mat-icon> Restaurar
+                            </button>
+                        </mat-menu>
+                    </div>
+                </li>
+            </ul>
+            <div *ngIf="filteredConversations.length === 0" class="no-conversations">
+                No hay conversaciones {{ filter === 'inactive' ? 'inactivas' : 'activas' }}
+            </div>
+        </div>
+    </div>
+    <!-- Panel de Chat -->
+    <div class="chat-panel">
+        <div *ngIf="!selectedConversation" class="center">
+            <div class="bienvenida">
+                <h1 class="styled-title">Bienvenido a GeminiChat, selecciona o crea una conversación para empezar.</h1>
+            </div>
+        </div>
+        <div *ngIf="selectedConversation" class="chat-content">
+            <h2>{{ selectedConversation.topic }}</h2>
+            <!-- Lista de mensajes (ahora desplazable) -->
+            <div class="message-list" #messagesContainer>
+                <div *ngFor="let message of messages">
+                    <!-- Mensaje de Usuario -->
+                    <div class="message user-message">
+                        <div class="message-content">
+                            {{ message.question }}
+                        </div>
+                        <div class="message-circle user-circle">U</div>
+                    </div>
+                    <!-- Respuesta del sistema -->
+                    <div class="message system-message">
+                        <div class="message-circle system-circle">IA</div>
+                        <div class="message-content">
+                            <span [innerHTML]="formatAnswer(message.answer)"></span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Carga de respuesta -->
+                <div *ngIf="isLoading" class="loading-message">
+                    <mat-spinner diameter="30" [color]="'primary'"></mat-spinner>
+                    <span>Esperando respuesta...</span>
+                </div>
+            </div>
+
+            <!-- Input para nuevo mensaje -->
+            <div class="new-message">
+                <textarea [(ngModel)]="newMessage" placeholder="Escribe tu mensaje..." (input)="onMessageInput()"
+                    (keydown)="onKeyDown($event)" rows="3"></textarea>
+                <button class="send-btn" (click)="sendMessage()" [disabled]="!newMessage.trim()"
+                    [ngStyle]="{'opacity': newMessage ? '1' : '0.5'}">
+                    <mat-icon>send</mat-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
